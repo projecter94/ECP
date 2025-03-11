@@ -1,0 +1,715 @@
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local TextChatService = game:GetService("TextChatService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+local Window = Rayfield:CreateWindow({
+    Name = "Evarge Control Panel",
+    LoadingTitle = "Evarge Studios",
+    LoadingSubtitle = "by Evarge",
+    Theme = "Default",
+    KeySystem = true,
+    KeySettings = {
+       Title = "Get key!",
+       Subtitle = "Key System",
+       Note = "Get key",
+       FileName = "Evarge123skibidikey",
+       SaveKey = true,
+       GrabKeyFromSite = false,
+       Key = {"evarge501"}
+    }
+})
+
+local maintab = Window:CreateTab("Main")
+local creditstab = Window:CreateTab("Credits")
+local functionstab = Window:CreateTab("Functions")
+local controlsection = maintab:CreateSection("Controller")
+
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:FindFirstChildOfClass("Humanoid")
+local rootPart = character:FindFirstChild("HumanoidRootPart")
+
+player.CharacterAdded:Connect(function(newCharacter)
+    character = newCharacter
+    humanoid = newCharacter:WaitForChild("Humanoid")
+    rootPart = newCharacter:WaitForChild("HumanoidRootPart")
+end)
+
+local Allies = {}
+local function isAllied(plr)
+    return Allies[plr.UserId] == true
+end
+
+local following = false
+local followTarget = nil
+local spinning = false
+local spinSpeed = 0
+local driving = false
+local driveSpeed = 0
+local banging = false
+local bangSpeed = 0
+local bangTarget = nil
+local bangTime = 0
+local orbiting = false
+local orbitTarget = nil
+local orbitHeight = 5
+local orbitDistance = 5
+local orbitSpeed = 5
+local orbitAngle = 0
+local autoJump = false
+local touring = false
+local originalCFrame = nil
+local floating = false
+local floatBaseY = nil
+local staring = false
+local stareTarget = nil
+local annoying = false
+local annoyTarget = nil
+local helicopter = false
+local helicopterSpinSpeed = 360
+local helicopterTime = 0
+local guard = false
+local guardSide = nil
+local guardTarget = nil
+local controllerPlayer = nil
+
+local Input = maintab:CreateInput({
+    Name = "Controller: ",
+    CurrentValue = "",
+    PlaceholderText = "Name or display name",
+    RemoveTextAfterFocusLost = false,
+    Flag = "Input1",
+    Callback = function(Text)
+        local inpt = Text:lower()
+        for _, p in pairs(Players:GetPlayers()) do
+            if p.Name:lower():find(inpt) or p.DisplayName:lower():find(inpt) then
+                controllerPlayer = p
+                Rayfield:Notify({
+                    Title = "Set successfully",
+                    Content = "Successfully set controller",
+                    Duration = 4.5,
+                    Image = "rewind",
+                })
+                return
+            end
+        end
+        Rayfield:Notify({
+            Title = "Couldnt set",
+            Content = "Couldnt set controller",
+            Duration = 4.5,
+            Image = "rewind",
+        })
+    end,
+})
+
+local allfuncs = [[
+;jump
+;bring
+;align <distance>
+;follow [user]
+;unfollow
+;spin [speed]
+;unspin
+;orbit [target] [height] [distance] [speed]
+;stick <user> [speed]
+;unstick / ;unorbit
+;tour
+;untour
+;drive [speed]
+;undrive
+;bang <user> [speed]
+;unbang
+;float
+;unfloat
+;sit
+;unsit
+;locate <user>
+;tp/goto/teleport <user>
+;stareat <user>
+;unstareat
+;annoy <user>
+;unannoy
+;helicopter [speed]
+;unhelicopter
+;guard <user> left/right
+;unguard
+;backflip
+;playdead
+;unplaydead
+;ally <user>
+;unally <user>
+;reset / ;respawn
+;ajump / ;autojump
+;unajump / ;unautojump
+]]
+local allcredits = [[
+Owner - Evarge
+Scripter - Roro
+Key - Henrick
+]]
+local Paragraph = functionstab:CreateParagraph({Title = "Functions: ", Content = allfuncs})
+local Paragraph = creditstab:CreateParagraph({Title = "Credits: ", Content = allcredits})
+local resettab = maintab:CreateSection("Manually stop")
+
+local function createDistanceGUI(targetPlayer)
+    if not controllerPlayer or not controllerPlayer.Character then return end
+    local gui = Instance.new("ScreenGui")
+    local frame = Instance.new("Frame")
+    local textLabel = Instance.new("TextLabel")
+    gui.Name = "DistanceDisplay"
+    gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    gui.Parent = game:GetService("CoreGui")
+    frame.Size = UDim2.new(0, 200, 0, 40)
+    frame.Position = UDim2.new(1, -210, 1, -50)
+    frame.BackgroundColor3 = Color3.new(0, 0, 0)
+    frame.BackgroundTransparency = 0.5
+    frame.Parent = gui
+    textLabel.Size = UDim2.new(1, 0, 1, 0)
+    textLabel.TextColor3 = Color3.new(1, 1, 1)
+    textLabel.Font = Enum.Font.GothamBold
+    textLabel.TextSize = 14
+    textLabel.Text = "Calculating..."
+    textLabel.Parent = frame
+
+    local startTime = os.time()
+    local lastChat = 0
+    local connection
+    connection = RunService.Heartbeat:Connect(function()
+        if not controllerPlayer.Character or not targetPlayer.Character then
+            connection:Disconnect()
+            gui:Destroy()
+            return
+        end
+        local controllerRoot = controllerPlayer.Character:FindFirstChild("HumanoidRootPart")
+        local targetRoot = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if controllerRoot and targetRoot then
+            local distance = math.floor((controllerRoot.Position - targetRoot.Position).Magnitude)
+            textLabel.Text = "Studs: "..tostring(distance)
+            if os.time() - lastChat >= 1 then
+                pcall(function()
+                    TextChatService.TextChannels.RBXGeneral:SendAsync("Studs: "..distance)
+                end)
+                lastChat = os.time()
+            end
+        end
+        if os.time() - startTime >= 3 then
+            connection:Disconnect()
+            gui:Destroy()
+        end
+    end)
+end
+
+local function onChatMessage(playerChat, message)
+    if playerChat == controllerPlayer then
+        local args = message:split(" ")
+
+        if args[1] == ";jump" then
+            humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+
+        elseif args[1] == ";bring" then
+            if controllerPlayer and controllerPlayer.Character then
+                rootPart.CFrame = controllerPlayer.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
+            end
+
+        elseif args[1] == ";align" then
+            local dist = tonumber(args[2]) or 3
+            if controllerPlayer and controllerPlayer.Character then
+                local cRoot = controllerPlayer.Character:FindFirstChild("HumanoidRootPart")
+                if cRoot then
+                    rootPart.CFrame = cRoot.CFrame * CFrame.new(-dist, 0, 0)
+                end
+            end
+
+        elseif args[1] == ";follow" then
+            if args[2] then
+                local targetName = args[2]:lower()
+                for _, p in pairs(Players:GetPlayers()) do
+                    if p.Name:lower():find(targetName) or p.DisplayName:lower():find(targetName) then
+                        if isAllied(p) then
+                            Rayfield:Notify({
+                                Title="Ally Found",
+                                Content="User is allied, skipping command",
+                                Duration=3
+                            })
+                            return
+                        end
+                        followTarget = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+                        break
+                    end
+                end
+            else
+                followTarget = controllerPlayer and controllerPlayer.Character and controllerPlayer.Character:FindFirstChild("HumanoidRootPart")
+            end
+            if followTarget then
+                following = true
+            end
+
+        elseif args[1] == ";unfollow" then
+            following = false
+            followTarget = nil
+
+        elseif args[1] == ";spin" then
+            local speed = tonumber(args[2]) or 30
+            spinning = true
+            spinSpeed = speed
+
+        elseif args[1] == ";unspin" then
+            spinning = false
+            spinSpeed = 0
+
+        elseif args[1] == ";orbit" and args[2] then
+            local targetName = args[2]:lower()
+            local height = tonumber(args[3]) or 5
+            local distance = tonumber(args[4]) or 5
+            local speed = tonumber(args[5]) or 5
+            for _, p in pairs(Players:GetPlayers()) do
+                if p.Name:lower():find(targetName) or p.DisplayName:lower():find(targetName) then
+                    if isAllied(p) then
+                        Rayfield:Notify({
+                            Title="Ally Found",
+                            Content="User is allied, skipping command",
+                            Duration=3
+                        })
+                        return
+                    end
+                    orbiting = true
+                    orbitTarget = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+                    orbitHeight = height
+                    orbitDistance = distance
+                    orbitSpeed = speed
+                    orbitAngle = 0
+                    return
+                end
+            end
+
+        elseif args[1] == ";stick" and args[2] then
+            local targetName = args[2]:lower()
+            local speed = tonumber(args[3]) or 20
+            for _, p in pairs(Players:GetPlayers()) do
+                if p.Name:lower():find(targetName) or p.DisplayName:lower():find(targetName) then
+                    if isAllied(p) then
+                        Rayfield:Notify({
+                            Title="Ally Found",
+                            Content="User is allied, skipping command",
+                            Duration=3
+                        })
+                        return
+                    end
+                    orbiting = true
+                    orbitTarget = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+                    orbitHeight = 1
+                    orbitDistance = 0
+                    orbitSpeed = speed
+                    orbitAngle = 0
+                    break
+                end
+            end
+
+        elseif args[1] == ";unstick" or args[1] == ";unorbit" then
+            orbiting = false
+            orbitTarget = nil
+
+        elseif args[1] == ";tour" then
+            touring = true
+            originalCFrame = rootPart.CFrame
+            spawn(function()
+                while touring do
+                    for _, p in pairs(Players:GetPlayers()) do
+                        if not touring then break end
+                        if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                            rootPart.CFrame = p.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
+                            wait(0.01)
+                        end
+                    end
+                end
+            end)
+
+        elseif args[1] == ";untour" then
+            touring = false
+            if controllerPlayer and controllerPlayer.Character and controllerPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                rootPart.CFrame = controllerPlayer.Character.HumanoidRootPart.CFrame
+            else
+                rootPart.CFrame = originalCFrame or rootPart.CFrame
+            end
+
+        elseif args[1] == ";drive" then
+            local speed = tonumber(args[2]) or 25
+            driving = true
+            driveSpeed = speed
+
+        elseif args[1] == ";undrive" then
+            driving = false
+            driveSpeed = 0
+
+        elseif args[1] == ";bang" and args[2] then
+            local targetName = args[2]:lower()
+            local speed = tonumber(args[3]) or 5
+            if speed then
+                for _, p in pairs(Players:GetPlayers()) do
+                    if p.Name:lower():find(targetName) or p.DisplayName:lower():find(targetName) then
+                        if isAllied(p) then
+                            Rayfield:Notify({
+                                Title="Ally Found",
+                                Content="User is allied, skipping command",
+                                Duration=3
+                            })
+                            return
+                        end
+                        banging = true
+                        bangSpeed = speed
+                        bangTarget = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+                        bangTime = 0
+                        break
+                    end
+                end
+            end
+
+        elseif args[1] == ";unbang" then
+            banging = false
+            bangTarget = nil
+
+        elseif args[1] == ";float" then
+            floating = true
+            floatBaseY = rootPart.Position.Y
+
+        elseif args[1] == ";unfloat" then
+            floating = false
+
+        elseif args[1] == ";sit" then
+            if humanoid then
+                humanoid.Sit = true
+            end
+
+        elseif args[1] == ";unsit" then
+            if humanoid then
+                humanoid.Sit = false
+            end
+
+        elseif args[1] == ";locate" and args[2] then
+            local targetName = table.concat(args, " ", 2):lower()
+            local foundPlayer
+            for _, p in pairs(Players:GetPlayers()) do
+                if p.Name:lower():find(targetName) or p.DisplayName:lower():find(targetName) then
+                    if isAllied(p) then
+                        Rayfield:Notify({
+                            Title="Ally Found",
+                            Content="User is allied, skipping command",
+                            Duration=3
+                        })
+                        return
+                    end
+                    foundPlayer = p
+                    break
+                end
+            end
+            if foundPlayer then
+                createDistanceGUI(foundPlayer)
+            else
+                Rayfield:Notify({
+                    Title = "Locate Failed",
+                    Content = "Player not found",
+                    Duration = 3,
+                    Image = "rbxassetid://0"
+                })
+            end
+
+        elseif (args[1] == ";tp" or args[1] == ";goto" or args[1] == ";teleport") and args[2] then
+            local targetName = table.concat(args, " ", 2):lower()
+            local foundPlayer
+            for _, p in pairs(Players:GetPlayers()) do
+                if p.Name:lower():find(targetName) or p.DisplayName:lower():find(targetName) then
+                    if isAllied(p) then
+                        Rayfield:Notify({
+                            Title="Ally Found",
+                            Content="User is allied, skipping command",
+                            Duration=3
+                        })
+                        return
+                    end
+                    foundPlayer = p
+                    break
+                end
+            end
+            if foundPlayer and foundPlayer.Character and foundPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                rootPart.CFrame = foundPlayer.Character.HumanoidRootPart.CFrame
+                Rayfield:Notify({
+                    Title = "Teleported",
+                    Content = "Teleported to "..foundPlayer.DisplayName,
+                    Duration = 2,
+                    Image = "rbxassetid://0"
+                })
+            else
+                Rayfield:Notify({
+                    Title = "Teleport Failed",
+                    Content = "Player not found",
+                    Duration = 3,
+                    Image = "rbxassetid://0"
+                })
+            end
+
+        elseif args[1] == ";stareat" and args[2] then
+            local targetName = args[2]:lower()
+            for _, p in pairs(Players:GetPlayers()) do
+                if p.Name:lower():find(targetName) or p.DisplayName:lower():find(targetName) then
+                    if isAllied(p) then
+                        Rayfield:Notify({
+                            Title="Ally Found",
+                            Content="User is allied, skipping command",
+                            Duration=3
+                        })
+                        return
+                    end
+                    staring = true
+                    stareTarget = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+                    break
+                end
+            end
+
+        elseif args[1] == ";unstareat" then
+            staring = false
+            stareTarget = nil
+
+        elseif args[1] == ";annoy" and args[2] then
+            local targetName = args[2]:lower()
+            for _, p in pairs(Players:GetPlayers()) do
+                if p.Name:lower():find(targetName) or p.DisplayName:lower():find(targetName) then
+                    if isAllied(p) then
+                        Rayfield:Notify({
+                            Title="Ally Found",
+                            Content="User is allied, skipping command",
+                            Duration=3
+                        })
+                        return
+                    end
+                    annoying = true
+                    annoyTarget = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+                    break
+                end
+            end
+
+        elseif args[1] == ";unannoy" then
+            annoying = false
+            annoyTarget = nil
+
+        elseif args[1] == ";helicopter" then
+            following = false
+            spinning = false
+            driving = false
+            banging = false
+            orbiting = false
+            touring = false
+            staring = false
+            annoying = false
+            floating = false
+            helicopter = true
+            helicopterTime = 0
+            helicopterSpinSpeed = tonumber(args[2]) or 360
+
+        elseif args[1] == ";unhelicopter" then
+            helicopter = false
+            helicopterSpinSpeed = 360
+
+        elseif args[1] == ";guard" and args[2] and args[3] then
+            local targetName = args[2]:lower()
+            local sideArg = args[3]:lower()
+            for _, p in pairs(Players:GetPlayers()) do
+                if p.Name:lower():find(targetName) or p.DisplayName:lower():find(targetName) then
+                    guard = true
+                    guardSide = sideArg
+                    guardTarget = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+                    Rayfield:Notify({
+                        Title = "Guard",
+                        Content = "Guarding "..p.DisplayName.." on side: "..sideArg,
+                        Duration = 3
+                    })
+                    break
+                end
+            end
+
+        elseif args[1] == ";unguard" then
+            guard = false
+            guardSide = nil
+            guardTarget = nil
+
+        elseif args[1] == ";backflip" then
+            local character = player.Character
+            if character and character:FindFirstChild("Humanoid") then
+                local humanoid = character.Humanoid
+                humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                wait(0.2)
+                local hrp = character:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    hrp.CFrame = hrp.CFrame * CFrame.Angles(math.rad(-180), 0, 0)
+                    wait(0.5)
+                end
+            end
+
+        -- New commands: ;playdead and ;unplaydead
+        elseif args[1] == ";playdead" then
+            if humanoid then
+                -- Make the character go limp
+                humanoid.PlatformStand = true
+                -- Tilt them onto the ground
+                if rootPart then
+                    rootPart.CFrame = rootPart.CFrame * CFrame.Angles(math.rad(90), 0, 0)
+                end
+            end
+
+        elseif args[1] == ";unplaydead" then
+            if humanoid then
+                humanoid.PlatformStand = false
+                -- Force them to stand up
+                humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+            end
+
+        elseif args[1] == ";ally" and args[2] then
+            local targetName = table.concat(args, " ", 2):lower()
+            for _, p in pairs(Players:GetPlayers()) do
+                if p.Name:lower():find(targetName) or p.DisplayName:lower():find(targetName) then
+                    Allies[p.UserId] = true
+                    Rayfield:Notify({
+                        Title = "Allied",
+                        Content = p.DisplayName.." is now allied",
+                        Duration = 3,
+                    })
+                    return
+                end
+            end
+            Rayfield:Notify({Title="Ally Failed",Content="User not found",Duration=3})
+
+        elseif args[1] == ";unally" and args[2] then
+            local targetName = table.concat(args, " ", 2):lower()
+            for _, p in pairs(Players:GetPlayers()) do
+                if p.Name:lower():find(targetName) or p.DisplayName:lower():find(targetName) then
+                    Allies[p.UserId] = nil
+                    Rayfield:Notify({
+                        Title = "Unallied",
+                        Content = p.DisplayName.." is no longer allied",
+                        Duration = 3,
+                    })
+                    return
+                end
+            end
+            Rayfield:Notify({Title="Unally Failed",Content="User not found",Duration=3})
+
+        elseif args[1] == ";reset" or args[1] == ";respawn" then
+            following = false
+            spinning = false
+            driving = false
+            banging = false
+            orbiting = false
+            autoJump = false
+            touring = false
+            floating = false
+            staring = false
+            annoying = false
+            helicopter = false
+            guard = false
+            guardSide = nil
+            guardTarget = nil
+            spinSpeed = 0
+            driveSpeed = 0
+            orbitAngle = 0
+            orbitTarget = nil
+            originalCFrame = nil
+            bangTarget = nil
+            stareTarget = nil
+            annoyTarget = nil
+
+            if character then
+                character:BreakJoints()
+            end
+
+        elseif args[1] == ";ajump" or args[1] == ";autojump" then
+            autoJump = true
+        elseif args[1] == ";unajump" or args[1] == ";unautojump" then
+            autoJump = false
+        end
+    end
+end
+
+for _, p in pairs(Players:GetPlayers()) do
+    p.Chatted:Connect(function(msg)
+        onChatMessage(p, msg)
+    end)
+end
+
+Players.PlayerAdded:Connect(function(newPlayer)
+    newPlayer.Chatted:Connect(function(msg)
+        onChatMessage(newPlayer, msg)
+    end)
+end)
+
+RunService.Heartbeat:Connect(function(dt)
+    if following and followTarget then
+        rootPart.CFrame = rootPart.CFrame:Lerp(CFrame.new(followTarget.Position) * CFrame.new(0, 0, 3), 0.1)
+    end
+
+    -- If you want spin 20x faster, do spinSpeed * 60
+    if spinning then
+        local spinAmount = spinSpeed * 3 * dt
+        rootPart.CFrame = rootPart.CFrame * CFrame.Angles(0, math.rad(spinAmount), 0)
+    end
+
+    if orbiting and orbitTarget then
+        orbitAngle = orbitAngle + math.rad(orbitSpeed * dt)
+        local offset = Vector3.new(
+            math.cos(orbitAngle) * orbitDistance,
+            orbitHeight,
+            math.sin(orbitAngle) * orbitDistance
+        )
+        rootPart.CFrame = orbitTarget.CFrame + offset
+    end
+
+    if autoJump and humanoid then
+        humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+    end
+
+    if driving then
+        rootPart.CFrame = rootPart.CFrame * CFrame.new(0, 0, -driveSpeed * dt)
+    end
+
+    if banging and bangTarget then
+        bangTime = bangTime + dt
+        local oscillation = math.sin(bangTime * bangSpeed) * 2
+        local desiredPos = bangTarget.Position - bangTarget.CFrame.LookVector * (4 + oscillation)
+        rootPart.CFrame = CFrame.new(desiredPos)
+    end
+
+    if floating then
+        local pos = rootPart.Position
+        rootPart.CFrame = CFrame.new(pos.X, floatBaseY + 5, pos.Z)
+    end
+
+    if staring and stareTarget then
+        local direction = (stareTarget.Position - rootPart.Position)
+        direction = Vector3.new(direction.X, 0, direction.Z).Unit
+        rootPart.CFrame = CFrame.lookAt(rootPart.Position, rootPart.Position + direction)
+    end
+
+    if annoying and annoyTarget then
+        local randomOffset = Vector3.new(math.random(-4,4), 0, math.random(-4,4))
+        rootPart.CFrame = CFrame.new(annoyTarget.Position + randomOffset)
+    end
+
+    if helicopter then
+        helicopterTime = helicopterTime + dt
+        local verticalOffset = math.sin(helicopterTime * 5) * 1.5
+        rootPart.CFrame = rootPart.CFrame * CFrame.Angles(0, math.rad(helicopterSpinSpeed * dt), 0)
+        rootPart.CFrame = rootPart.CFrame + Vector3.new(0, verticalOffset, 0)
+    end
+
+    if guard and guardTarget then
+        local offset = Vector3.new(2, 3, 0)
+        if guardSide == "right" then
+            offset = Vector3.new(-2, 3, 0)
+        elseif guardSide == "left" then
+            offset = Vector3.new(2, 3, 0)
+        end
+        local desiredCFrame = guardTarget.CFrame * CFrame.new(offset)
+        rootPart.CFrame = rootPart.CFrame:Lerp(desiredCFrame, 0.2)
+    end
+end)
